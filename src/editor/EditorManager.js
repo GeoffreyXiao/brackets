@@ -662,7 +662,7 @@ define(function (require, exports, module) {
             } else {
                 _removeCustomViewer();
                 _showNoEditor();
-                $(exports).triggerHandler("currentlyViewedFileChange");
+                _setCurrentlyViewedPath();
             }
             
         }
