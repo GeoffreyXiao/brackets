@@ -23,7 +23,7 @@
 
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-/*global define, $, Mustache */
+/*global define, $, Mustache, window */
 define(function (require, exports, module) {
     "use strict";
     
@@ -34,9 +34,12 @@ define(function (require, exports, module) {
         ProjectManager      = require("project/ProjectManager"),
         Strings             = require("strings"),
         StringUtils         = require("utils/StringUtils"),
-        FileSystem          = require("filesystem/FileSystem");
+        FileSystem          = require("filesystem/FileSystem"),
+        FileSystemError     = require("filesystem/FileSystemError"),
+        FileUtils           = require("file/FileUtils");
     
-    var _naturalWidth = 0;
+    var _naturalWidth = 0,
+        _fullPath;
     
     /** Update the scale element, i.e. on resize 
      *  @param {!string} currentWidth actual width of image in view
@@ -79,19 +82,39 @@ define(function (require, exports, module) {
         return $(Mustache.render(ImageHolderTemplate, {fullPath: fullPath}));
     }
     
+    function _removeViewIfFileDeleted(fileExists) {
+        if (!fileExists) {
+            FileUtils.showFileOpenError(FileSystemError.NOT_FOUND, _fullPath).done(
+                function () {
+                    EditorManager.notifyPathDeleted();
+                }
+            );
+        }
+    }
+    
+    /** 
+     *    
+     */
+    function _checkFileExists() {
+        var file = FileSystem.getFileForPath(_fullPath);
+        file.exists(_removeViewIfFileDeleted);
+    }
+    
     /** 
      *    
      */
     function _removeListeners() {
         $(PanelManager).off("editorAreaResize", _onEditorAreaResize);
         $(DocumentManager).off("fileNameChange", _onFileNameChange);
+        window.removeEventListener("focus", _checkFileExists);
     }
-    
+
     /** Perform decorations on the view that require loading the image in the browser,
      *  i.e. getting actual and natural width and height andplacing the scale sticker
      *   @param {!string} fullPath path to the image file
      */
     function render(fullPath) {
+        _fullPath = fullPath;
         var relPath = ProjectManager.makeProjectRelativeIfPossible(fullPath);
 
         $("#img-path").text(relPath);
@@ -119,6 +142,7 @@ define(function (require, exports, module) {
             $(EditorManager).on("removeCustomViewer", _removeListeners);
             $(DocumentManager).on("fileNameChange", _onFileNameChange);
             _updateScale($(this).width());
+            window.addEventListener("focus", _checkFileExists);
         });
     }
     exports.getCustomViewHolder = getCustomViewHolder;

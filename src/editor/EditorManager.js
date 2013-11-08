@@ -664,7 +664,6 @@ define(function (require, exports, module) {
                 _showNoEditor();
                 _setCurrentlyViewedPath();
             }
-            
         }
         if (fullPath) {
             if (_currentlyViewedPath === fullPath) {
